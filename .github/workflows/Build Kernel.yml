@@ -24,7 +24,7 @@ on:
         required: true
         default: 'RMX2020'
       ksu_source:
-        description: 'KSU Setup Script (KernelSU, Next, etc.)'
+        description: 'KSU / KSUN / WILDKSU Script'
         required: false
         default: 'https://raw.githubusercontent.com/backslashxx/KernelSU/refs/heads/master/kernel/setup.sh'
       ksu_branch:
@@ -109,7 +109,7 @@ jobs:
 
           # 4. Setup Compilation Env
           export ARCH=arm64
-          export KBUILD_BUILD_HOST=Satori
+          export KBUILD_BUILD_HOST=ReviveMeJett
           export KBUILD_BUILD_USER="dantepaulxd"
           export PATH="${{ github.workspace }}/clang/bin:${PATH}"
           
