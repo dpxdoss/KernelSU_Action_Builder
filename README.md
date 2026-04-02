@@ -5,4 +5,4 @@
 - update your build.yml
 - then go to action > workflow > start building.
 
-# @danteoss / @dantepaulxd
+by dantepaulxd / danteoss
