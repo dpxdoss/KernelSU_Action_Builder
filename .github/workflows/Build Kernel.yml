@@ -12,25 +12,25 @@ on:
         required: true
         default: '16.0-KSU'
       clang_url:
-        description: 'Clang Source (tar.gz or git)'
+        description: 'Clang Source Link'
         required: true
         default: 'https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-14.0.0_r50/clang-r510928.tar.gz'
-      ksu_source:
-        description: 'KernelSU Setup Script URL'
-        required: false
-        default: 'https://raw.githubusercontent.com/backslashxx/KernelSU/refs/heads/master/kernel/setup.sh'
-      ksu_branch:
-        description: 'KernelSU Branch (-s flag)'
-        required: false
-        default: 'master'
       ak3_source:
-        description: 'AnyKernel3 Source'
+        description: 'AnyKernel Link'
         required: true
         default: 'https://github.com/dpxdoss/AnyKernel3.git'
       ak3_branch:
-        description: 'AnyKernel3 Branch'
+        description: 'AnyKernel Branch'
         required: true
         default: 'RMX2020'
+      ksu_source:
+        description: 'KernelSU Setup Link'
+        required: false
+        default: 'https://raw.githubusercontent.com/backslashxx/KernelSU/refs/heads/master/kernel/setup.sh'
+      ksu_branch:
+        description: 'KernelSU Branch'
+        required: false
+        default: 'master'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
