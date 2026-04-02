@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       kernel_source:
-        description: 'Kernel Source'
+        description: 'Kernel Source Link'
         required: true
         default: 'https://github.com/crdroidandroid/android_kernel_realme_RMX2020.git'
       kernel_branch:
@@ -12,16 +12,11 @@ on:
         required: true
         default: '16.0'
       clang_url:
-        description: 'Clang Source'
+        description: 'Clang Source (tar.gz or git)'
         required: true
         default: 'https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-14.0.0_r50/clang-r510928.tar.gz'
-      use_ksu:
-        description: 'Integrate KernelSU'
-        required: true
-        type: boolean
-        default: true
       ksu_source:
-        description: 'KernelSU Setup Script URL'
+        description: 'KernelSU Source (Leave empty to skip)'
         required: false
         default: 'https://raw.githubusercontent.com/backslashxx/KernelSU/refs/heads/master/kernel/setup.sh'
       ak3_source:
@@ -29,7 +24,7 @@ on:
         required: true
         default: 'https://github.com/sarthakroy2002/AnyKernel3.git'
       output_type:
-        description: 'Select Output Format'
+        description: 'Output Type'
         required: true
         type: choice
         default: 'AnyKernel + Image'
@@ -73,14 +68,15 @@ jobs:
           [ -d "clang/.git" ] && cd clang && git lfs pull || true
 
       - name: Build Kernel (with Logging)
-        id: build_kernel
         run: |
           cd kernel-source
           
-          # 1. Integrate KSU if enabled
-          if [ "${{ github.event.inputs.use_ksu }}" = "true" ]; then
-             echo "Integrating KernelSU..."
+          # 1. Integrate KSU if link is provided
+          if [ ! -z "${{ github.event.inputs.ksu_source }}" ]; then
+             echo "Integrating KernelSU from ${{ github.event.inputs.ksu_source }}..."
              curl -LSs "${{ github.event.inputs.ksu_source }}" | bash
+          else
+             echo "KernelSU link empty, skipping integration."
           fi
 
           # 2. Setup Environment
@@ -89,7 +85,7 @@ jobs:
           export KBUILD_BUILD_USER="dantepaulxd"
           export PATH="${{ github.workspace }}/clang/bin:${PATH}"
           
-          # 3. Compile with Log Redirection
+          # 3. Compile
           make O=out ARCH=arm64 RMX2020_defconfig 2>&1 | tee ../build.log
           
           make -j$(nproc --all) O=out \
@@ -100,11 +96,11 @@ jobs:
                       LLVM=1 \
                       CONFIG_NO_ERROR_ON_MISMATCH=y 2>&1 | tee -a ../build.log
 
-      - name: Upload Build Log (Always)
-        if: always()
+      - name: Upload Build Log (On Failure)
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: Full-Build-Log
+          name: Failure-Log
           path: build.log
 
       - name: Prepare Artifacts
@@ -127,7 +123,7 @@ jobs:
             mv Kernel-Build.zip $OUT_DIR/
           fi
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release (Draft)
         if: success()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -135,7 +131,9 @@ jobs:
           RELEASE_TAG="Build-$(date +%Y%m%d-%H%M)"
           gh release create "$RELEASE_TAG" --draft \
             --title "Kernel Build: $RELEASE_TAG" \
-            --notes "Build successful. Logs attached to Action run." \
+            --notes "Kernel Source: ${{ github.event.inputs.kernel_source }}
+            Branch: ${{ github.event.inputs.kernel_branch }}
+            AnyKernel3: ${{ github.event.inputs.ak3_source }}" \
             ${{ github.workspace }}/out_assets/*
 
       - name: Post-Build Cleanup
