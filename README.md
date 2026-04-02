@@ -1,9 +1,5 @@
-📱 Simple Kernel Builder
-
 An automated Action builder for compiling Android Kernels.
-
 #
-
 Setup
     Fork this repository to your own account.
     Navigate to the Actions tab in your forked repo.
@@ -18,6 +14,5 @@ Build
     AnyKernel3 Source
     Output Type
     - Zip / Image / Both.
-
-    #
-    by @dantepaulxd / DanteOSS
+#
+by @dantepaulxd / DanteOSS
