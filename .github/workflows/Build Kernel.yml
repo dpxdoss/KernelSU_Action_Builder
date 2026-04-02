@@ -33,7 +33,10 @@ on:
         default: 'master'
 
 env:
+  # Using Node 24 and newer actions to stop deprecation errors
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  BUILD_HOST: ReviveMeJett
+  BUILD_USER: dantepaulxd
 
 jobs:
   build-kernel:
@@ -42,7 +45,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4 # v4 is fine, GitHub just likes to complain during transitions
 
       - name: Install Dependencies
         run: |
@@ -80,13 +83,7 @@ jobs:
           echo "DEVICE=$DEVICE" >> $GITHUB_ENV
           echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
 
-          # 2. Extract Kernel Name (CONFIG_LOCALVERSION)
-          # Improved regex to find the version name even if it starts with a hyphen
-          LV_NAME=$(grep "CONFIG_LOCALVERSION=" arch/arm64/configs/$DEFCONFIG | sed 's/.*="//;s/".*//;s/^-//')
-          [ -z "$LV_NAME" ] && LV_NAME="Kernel"
-          echo "LV_NAME=$LV_NAME" >> $GITHUB_ENV
-
-          # 3. KSU Integration & APK Downloader
+          # 2. KSU Integration & APK Downloader
           if [ ! -z "${{ github.event.inputs.ksu_source }}" ]; then
               curl -LSs "${{ github.event.inputs.ksu_source }}" | bash -s ${{ github.event.inputs.ksu_branch }}
               
@@ -104,13 +101,13 @@ jobs:
               echo "KSU_INFO=NoKSU" >> $GITHUB_ENV
           fi
 
-          # 4. Setup Compilation Env
+          # 3. Setup Compilation Env
           export ARCH=arm64
-          export KBUILD_BUILD_HOST=ReviveMeJett
-          export KBUILD_BUILD_USER="dantepaulxd"
+          export KBUILD_BUILD_HOST=${{ env.BUILD_HOST }}
+          export KBUILD_BUILD_USER=${{ env.BUILD_USER }}
           export PATH="${{ github.workspace }}/clang/bin:${PATH}"
           
-          # 5. Compile
+          # 4. Compile
           make O=out ARCH=arm64 $DEFCONFIG
           make -j$(nproc --all) O=out ARCH=arm64 CC="clang" CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- LLVM=1 CONFIG_NO_ERROR_ON_MISMATCH=y
 
@@ -125,8 +122,10 @@ jobs:
           
           # Custom Date Format (DDMMYY-HHMM)
           DATE_STR=$(date +%d%m%y-%H%M)
-          # Format: Satori_KernelSU-v0.9.5_RMX2020_020426-1850.zip
-          BASE_NAME="${{ env.LV_NAME }}_${{ env.KSU_INFO }}_${{ env.DEVICE }}_$DATE_STR"
+          
+          # NEW NAME LOGIC: Uses Build Host as the Kernel Name
+          # Format: ReviveMeJett_KernelSU-v3.2.2-21_RMX2020_030426-1200.zip
+          BASE_NAME="${{ env.BUILD_HOST }}_${{ env.KSU_INFO }}_${{ env.DEVICE }}_$DATE_STR"
           echo "FINAL_NAME=$BASE_NAME" >> $GITHUB_ENV
 
           cp $IMAGE AnyKernel/
@@ -147,6 +146,7 @@ jobs:
           gh release create "${{ env.FINAL_NAME }}" --draft \
             --title "${{ env.FINAL_NAME }}" \
             --notes "### Kernel Build Details
+            * **Kernel Name:** ${{ env.BUILD_HOST }}
             * **Device:** ${{ env.DEVICE }}
             * **Kernel Source:** [${{ github.event.inputs.kernel_branch }}]($CLEAN_SOURCE/tree/${{ github.event.inputs.kernel_branch }})
             * **Latest Commit:** [${{ env.SHORT_COMMIT }}]($CLEAN_SOURCE/commit/${{ env.LATEST_COMMIT }})
