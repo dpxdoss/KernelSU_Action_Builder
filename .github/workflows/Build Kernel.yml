@@ -29,12 +29,12 @@ on:
         # default anykernel branch
         default: 'RMX2020'
       ksu_source:
-        description: 'KernelSU Link (leave empty to skip)'
+        description: 'KernelSU Link'
         required: false
         # default ksu link
         default: 'https://raw.githubusercontent.com/backslashxx/KernelSU/refs/heads/master/kernel/setup.sh'
       ksu_branch:
-        description: 'KernelSU Branch (leave empty to skip)''
+        description: 'KernelSU Branch'
         required: false
         # default ksu branch
         default: 'master'
@@ -60,15 +60,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Setup Environment
-        run: |
-          # If ksu_source input is empty, disable KSU for this run
-          if [ -z "${{ github.event.inputs.ksu_source }}" ]; then
-            echo "FINAL_USE_KSU=false" >> $GITHUB_ENV
-          else
-            echo "FINAL_USE_KSU=${{ env.USE_KSU }}" >> $GITHUB_ENV
-          fi
-
       - name: Install Dependencies
         run: |
           sudo apt update
@@ -82,8 +73,9 @@ jobs:
       - name: Cloning Kernel
         run: |
           git clone --depth=1 -b ${{ github.event.inputs.kernel_branch }} ${{ github.event.inputs.kernel_source }} kernel-source
-          echo "LATEST_COMMIT=$(git -C kernel-source rev-parse HEAD)" >> $GITHUB_ENV
-          echo "SHORT_COMMIT=$(git -C kernel-source rev-parse --short HEAD)" >> $GITHUB_ENV
+          cd kernel-source
+          echo "LATEST_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "SHORT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Cloning Clang
         run: |
@@ -103,8 +95,8 @@ jobs:
           echo "DEVICE=$DEVICE" >> $GITHUB_ENV
           echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
 
-          # Logic check: Using the dynamic FINAL_USE_KSU variable
-          if [ "${{ env.FINAL_USE_KSU }}" = "true" ] && [ ! -z "${{ github.event.inputs.ksu_source }}" ]; then
+          # FIXED KSU LOGIC: Check if input is empty OR if USE_KSU is false
+          if [ "${{ env.USE_KSU }}" = "true" ] && [ ! -z "${{ github.event.inputs.ksu_source }}" ]; then
               curl -LSs "${{ github.event.inputs.ksu_source }}" | bash -s ${{ github.event.inputs.ksu_branch }}
               
               if [ -d "drivers/kernelsu" ]; then KSU_TYPE="KernelSU"; KSU_REPO="backslashxx/KernelSU"; 
@@ -125,7 +117,6 @@ jobs:
                 curl -L "$APK_URL" -o "../${KSU_TYPE}_Manager_${KSU_VER}.apk"
               fi
           else
-              # If KSU is disabled or link is missing, set label to None
               echo "KSU_INFO=None" >> $GITHUB_ENV
           fi
 
@@ -152,7 +143,6 @@ jobs:
           mkdir -p $OUT_DIR
           git clone --depth=1 -b ${{ github.event.inputs.ak3_branch }} ${{ github.event.inputs.ak3_source }} AnyKernel
           
-          # Adjust naming: If KSU_INFO is 'None', we omit it from the zip name
           if [ "${{ env.KSU_INFO }}" = "None" ]; then
             KSU_PART=""
           else
