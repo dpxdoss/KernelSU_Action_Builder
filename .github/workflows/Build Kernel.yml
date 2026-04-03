@@ -47,7 +47,7 @@ env:
   USE_LLVM: 1
   NO_ERROR_ON_MISMATCH: y
   
-  USE_KSU: false
+  USE_KSU: true
   FETCH_KSU_APK: true
   INCLUDE_KSU_VERSION: true
   
