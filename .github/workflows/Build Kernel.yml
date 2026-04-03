@@ -60,6 +60,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup Environment
+        run: |
+          # If ksu_source input is empty, disable KSU for this run
+          if [ -z "${{ github.event.inputs.ksu_source }}" ]; then
+            echo "FINAL_USE_KSU=false" >> $GITHUB_ENV
+          else
+            echo "FINAL_USE_KSU=${{ env.USE_KSU }}" >> $GITHUB_ENV
+          fi
+
       - name: Install Dependencies
         run: |
           sudo apt update
@@ -94,7 +103,8 @@ jobs:
           echo "DEVICE=$DEVICE" >> $GITHUB_ENV
           echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
 
-          if [ "${{ env.USE_KSU }}" = "true" ] && [ ! -z "${{ github.event.inputs.ksu_source }}" ]; then
+          # Logic check: Using the dynamic FINAL_USE_KSU variable
+          if [ "${{ env.FINAL_USE_KSU }}" = "true" ] && [ ! -z "${{ github.event.inputs.ksu_source }}" ]; then
               curl -LSs "${{ github.event.inputs.ksu_source }}" | bash -s ${{ github.event.inputs.ksu_branch }}
               
               if [ -d "drivers/kernelsu" ]; then KSU_TYPE="KernelSU"; KSU_REPO="backslashxx/KernelSU"; 
@@ -115,7 +125,8 @@ jobs:
                 curl -L "$APK_URL" -o "../${KSU_TYPE}_Manager_${KSU_VER}.apk"
               fi
           else
-              echo "KSU_INFO=NoKSU" >> $GITHUB_ENV
+              # If KSU is disabled or link is missing, set label to None
+              echo "KSU_INFO=None" >> $GITHUB_ENV
           fi
 
           export ARCH=arm64
@@ -141,8 +152,15 @@ jobs:
           mkdir -p $OUT_DIR
           git clone --depth=1 -b ${{ github.event.inputs.ak3_branch }} ${{ github.event.inputs.ak3_source }} AnyKernel
           
+          # Adjust naming: If KSU_INFO is 'None', we omit it from the zip name
+          if [ "${{ env.KSU_INFO }}" = "None" ]; then
+            KSU_PART=""
+          else
+            KSU_PART="_${{ env.KSU_INFO }}"
+          fi
+
           [ "${{ env.INCLUDE_DATE }}" = "true" ] && DATE_STR="_$(date +%d%m%y-%H%M)" || DATE_STR=""
-          BASE_NAME="${{ env.BUILD_HOST }}_${{ env.KSU_INFO }}_${{ env.DEVICE }}${DATE_STR}"
+          BASE_NAME="${{ env.BUILD_HOST }}${KSU_PART}_${{ env.DEVICE }}${DATE_STR}"
           echo "FINAL_NAME=$BASE_NAME" >> $GITHUB_ENV
 
           cp $IMAGE AnyKernel/
