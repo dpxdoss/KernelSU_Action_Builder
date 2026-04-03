@@ -40,20 +40,15 @@ on:
         default: 'master'
 
 env:
-
   BUILD_HOST: ReviveMeJett
   BUILD_USER: dantepaulxd
-  
   USE_LLVM: 1
+  USE_KSU: true
   NO_ERROR_ON_MISMATCH: y
-  
-  USE_KSU: false
-  FETCH_KSU_APK: true
-  INCLUDE_KSU_VERSION: true
-  
   POST_AS_DRAFT: true
   INCLUDE_DATE: true
-
+  FETCH_KSU_APK: true
+  INCLUDE_KSU_VERSION: true
   EXTRA_MAKE_FLAGS: ""
 
 jobs:
@@ -99,11 +94,7 @@ jobs:
           echo "DEVICE=$DEVICE" >> $GITHUB_ENV
           echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
 
-          # Initialize build override
-          KSU_OVERRIDE=""
-
           if [ "${{ env.USE_KSU }}" = "true" ] && [ ! -z "${{ github.event.inputs.ksu_source }}" ]; then
-              # Only runs if USE_KSU is true
               curl -LSs "${{ github.event.inputs.ksu_source }}" | bash -s ${{ github.event.inputs.ksu_branch }}
               
               if [ -d "drivers/kernelsu" ]; then KSU_TYPE="KernelSU"; KSU_REPO="backslashxx/KernelSU"; 
@@ -124,9 +115,7 @@ jobs:
                 curl -L "$APK_URL" -o "../${KSU_TYPE}_Manager_${KSU_VER}.apk"
               fi
           else
-              # Runs if USE_KSU is false: Skips setup, skips APK, and forces non-KSU build
               echo "KSU_INFO=NoKSU" >> $GITHUB_ENV
-              KSU_OVERRIDE="CONFIG_KSU=n CONFIG_KSU_NEXT=n"
           fi
 
           export ARCH=arm64
@@ -142,7 +131,6 @@ jobs:
             CROSS_COMPILE=aarch64-linux-android- \
             LLVM=${{ env.USE_LLVM }} \
             CONFIG_NO_ERROR_ON_MISMATCH=${{ env.NO_ERROR_ON_MISMATCH }} \
-            $KSU_OVERRIDE \
             ${{ env.EXTRA_MAKE_FLAGS }}
 
       - name: Prepare Assets
