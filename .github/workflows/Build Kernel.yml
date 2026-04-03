@@ -40,15 +40,20 @@ on:
         default: 'master'
 
 env:
+
   BUILD_HOST: ReviveMeJett
   BUILD_USER: dantepaulxd
+  
   USE_LLVM: 1
-  USE_KSU: true
   NO_ERROR_ON_MISMATCH: y
-  POST_AS_DRAFT: true
-  INCLUDE_DATE: true
+  
+  USE_KSU: false
   FETCH_KSU_APK: true
   INCLUDE_KSU_VERSION: true
+  
+  POST_AS_DRAFT: true
+  INCLUDE_DATE: true
+  
   EXTRA_MAKE_FLAGS: ""
 
 jobs:
