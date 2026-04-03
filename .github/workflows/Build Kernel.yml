@@ -40,7 +40,6 @@ env:
   POST_AS_DRAFT: true
   INCLUDE_DATE: true
   FETCH_KSU_APK: true
-  INCLUDE_KSU_VERSION: true
 
 jobs:
   build-kernel:
@@ -74,21 +73,18 @@ jobs:
             git clone --depth=1 ${{ inputs.clang_url }} clang
           fi
 
-      # STEP: Setup KernelSU (Only runs if user keeps the link)
       - name: Setup KernelSU
         if: inputs.ksu_source != '' && contains(inputs.ksu_source, 'http')
         run: |
           cd kernel-source
           curl -LSs "${{ inputs.ksu_source }}" | bash -s ${{ inputs.ksu_branch }}
           
-          # Detect KSU Type
           if [ -d "drivers/kernelsu" ]; then KSU_TYPE="KernelSU"; KSU_REPO="backslashxx/KernelSU"; 
           elif [ -d "drivers/ksu" ]; then KSU_TYPE="KernelSU-Next"; KSU_REPO="tiann/KernelSU"; 
           else KSU_TYPE="KSU"; KSU_REPO="backslashxx/KernelSU"; fi
           
           KSU_DATA=$(curl -s https://api.github.com/repos/$KSU_REPO/releases/latest)
           KSU_VER=$(echo $KSU_DATA | jq -r .tag_name)
-          
           echo "KSU_INFO=${KSU_TYPE}-${KSU_VER}" >> $GITHUB_ENV
           
           if [ "${{ env.FETCH_KSU_APK }}" = "true" ]; then
@@ -96,10 +92,15 @@ jobs:
             curl -L "$APK_URL" -o "../${KSU_TYPE}_Manager_${KSU_VER}.apk"
           fi
 
-      # STEP: Fallback (If user cleared the box)
       - name: Skip KernelSU
         if: inputs.ksu_source == '' || !contains(inputs.ksu_source, 'http')
-        run: echo "KSU_INFO=None" >> $GITHUB_ENV
+        run: |
+          echo "KSU_INFO=None" >> $GITHUB_ENV
+          # Force disable KSU in defconfig if it's already in the source
+          cd kernel-source
+          DEFCONFIG=$(ls arch/arm64/configs/ | grep "_defconfig" | head -n 1)
+          sed -i 's/CONFIG_KSU=y/CONFIG_KSU=n/g' arch/arm64/configs/$DEFCONFIG
+          sed -i 's/CONFIG_KSU_NEXT=y/CONFIG_KSU_NEXT=n/g' arch/arm64/configs/$DEFCONFIG
 
       - name: Building Kernel
         run: |
@@ -110,9 +111,17 @@ jobs:
           
           export PATH="${{ github.workspace }}/clang/bin:${PATH}"
           make O=out ARCH=arm64 $DEFCONFIG
+          
+          # Force build flags based on KSU_INFO
+          KSU_FLAG=""
+          if [ "${{ env.KSU_INFO }}" = "None" ]; then
+             KSU_FLAG="CONFIG_KSU=n CONFIG_KSU_NEXT=n"
+          fi
+
           make -j$(nproc --all) O=out ARCH=arm64 CC="clang" \
             CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- \
-            LLVM=${{ env.USE_LLVM }} CONFIG_NO_ERROR_ON_MISMATCH=${{ env.NO_ERROR_ON_MISMATCH }}
+            LLVM=${{ env.USE_LLVM }} CONFIG_NO_ERROR_ON_MISMATCH=${{ env.NO_ERROR_ON_MISMATCH }} \
+            $KSU_FLAG
 
       - name: Prepare Assets
         run: |
@@ -121,7 +130,6 @@ jobs:
           mkdir -p $OUT_DIR
           git clone --depth=1 -b ${{ inputs.ak3_branch }} ${{ inputs.ak3_source }} AnyKernel
           
-          # Clean filename logic
           KSU_PART=""
           [ "${{ env.KSU_INFO }}" != "None" ] && KSU_PART="_${{ env.KSU_INFO }}"
           [ "${{ env.INCLUDE_DATE }}" = "true" ] && DATE_STR="_$(date +%d%m%y-%H%M)" || DATE_STR=""
@@ -132,7 +140,7 @@ jobs:
           cp $IMAGE AnyKernel/
           cd AnyKernel && zip -r9 ../$BASE_NAME.zip ./* && cd ..
           mv $BASE_NAME.zip $OUT_DIR/
-          [ -f *.apk ] && mv *.apk $OUT_DIR/
+          [ -f *.apk ] && [ "${{ env.KSU_INFO }}" != "None" ] && mv *.apk $OUT_DIR/ || rm -f *.apk
 
       - name: Create Release
         env:
