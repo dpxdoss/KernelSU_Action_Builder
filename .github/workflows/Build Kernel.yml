@@ -29,12 +29,12 @@ on:
         # default anykernel branch
         default: 'RMX2020'
       ksu_source:
-        description: 'KernelSU Link (leave empty to skip)'
+        description: 'KernelSU Link (Clear this box to skip KSU)'
         required: false
         # default ksu link
         default: 'https://raw.githubusercontent.com/backslashxx/KernelSU/refs/heads/master/kernel/setup.sh'
       ksu_branch:
-        description: 'KernelSU Branch (leave empty to skip)'
+        description: 'KernelSU Branch'
         required: false
         # default ksu branch
         default: 'master'
@@ -95,9 +95,10 @@ jobs:
           echo "DEVICE=$DEVICE" >> $GITHUB_ENV
           echo "DEFCONFIG=$DEFCONFIG" >> $GITHUB_ENV
 
-          # FIXED KSU LOGIC: Check if input is empty OR if USE_KSU is false
-          if [ "${{ env.USE_KSU }}" = "true" ] && [ ! -z "${{ github.event.inputs.ksu_source }}" ]; then
-              curl -LSs "${{ github.event.inputs.ksu_source }}" | bash -s ${{ github.event.inputs.ksu_branch }}
+          # IMPROVED LOGIC: Check if box is actually empty or set to "skip"
+          KSU_SRC="${{ github.event.inputs.ksu_source }}"
+          if [ "${{ env.USE_KSU }}" = "true" ] && [ ! -z "$KSU_SRC" ] && [ "$KSU_SRC" != "skip" ] && [ "$KSU_SRC" != "none" ]; then
+              curl -LSs "$KSU_SRC" | bash -s ${{ github.event.inputs.ksu_branch }}
               
               if [ -d "drivers/kernelsu" ]; then KSU_TYPE="KernelSU"; KSU_REPO="backslashxx/KernelSU"; 
               elif [ -d "drivers/ksu" ]; then KSU_TYPE="KernelSU-Next"; KSU_REPO="tiann/KernelSU"; 
