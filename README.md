@@ -17,10 +17,11 @@ An automated GitHub Action for compiling Android kernels with integrated KernelS
 | `USE_LLVM` | `1` | `1` to build with Clang/LLVM, `0` for GCC. |
 | `USE_KSU` | `true` | Set to `false` to skip KernelSU patching. |
 | `FETCH_KSU_APK` | `true` | Add matching KSU manager apk in release page. |
+| `INCLUDE_KSU_VERSION`| `true` | Set to `false` to show only "KernelSU" in filename instead of version tag. |
 | `NO_ERROR_ON_MISMATCH` | `y` | Ignores non-critical warnings to prevent build failure. |
 | `POST_AS_DRAFT` | `true` | Uploads Releases as Draft (private). Set to `false` for Public. |
 | `INCLUDE_DATE` | `true` | Adds `DDMMYY-HHMM` stamp to the filename. |
 | `EXTRA_MAKE_FLAGS` | `""` | Add extra arguments here (e.g., `"LLVM_IAS=1"`). |
 
 
-**Made with ❤️ by [@dantepaulxd](https://github.com/dpxdoss)**
+**Made with ❤️ by [Dante](https://github.com/dpxdoss)**
