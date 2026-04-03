@@ -1,39 +1,46 @@
-# 📱 Simple Kernel Builder
+# 📱 Universal Kernel Builder
 
-An automated GitHub Action for compiling Android kernels. Developed by **@dantepaulxd**
+An automated GitHub Action for compiling Android kernels with integrated KernelSU support. Optimized for modern runners and multi-device compatibility.
 
------
+---
 
-# 🚀 Guide
+## 🚀 Getting Started
 
-### 1\. Setup
+### 1. Setup
+* **Fork** this repository to your GitHub account.
+* Navigate to the **Actions** tab in your forked repo.
+* Select **Build Kernel** from the workflow list on the left.
+* Click **Enable Actions** if prompted.
 
-  * **Fork** this repository to your own account.
-  * Navigate to the **Actions** tab in your forked repo.
-  * On the left sidebar, click on **Build Kernel**.
-  * Click **Enable Actions** if it is your first time.
+### 2. Launching a Build
+Click the **Run workflow** dropdown and provide your specific details:
 
-### 2\. Build
+* **Kernel Source / Branch:** Link of your kernel repository.
+* **Clang Link:** tar.gz direct link or a Git repo.
+* **AnyKernel Link/Branch:** Your AnyKernel3 repository.
 
-Click **Run workflow** and fill in the following fields:
+* **KernelSU Link:** Setup script Link
+* - e.g., KSU Official, Next, or WildKSU. **Leave empty to skip KSU integration.**
 
-  * **Kernel Source:** The link to your kernel repository.
-  * **Kernel Branch:** The branch name you want to build (e.g., `sixteen-qpr2`).
-  * **Clang Source:** The toolchain link (AOSP tar.gz or Git link).
-  * **KSU Source:** The KernelSU setup script link (**Leave empty to skip KSU**).
-  * **AnyKernel3 Source:** Your preferred AnyKernel3 repository for zipping.
-  * **Output Type:** Select between **Zip**, **boot.img**, or **Both**.
+**Click "Run workflow" to begin the process.**
 
-**Click "Run workflow" to start building.**
+---
 
------
+## 📝 Key Features & Details
 
-# 📝 Details
+* **Smart Naming:**
+* - The workflow automatically generates a professional filename: `{KernelName}_{KSU-Version}_{Device}_{Date-Time}.zip`.
+* **Automatic KSU Detection:**
+* - Automatically identifies if you are using Official KernelSU or KernelSU-Next and fetches the matching Manager APK.
+* **Universal Image Finding:**
+* - Automatically detects the compiled boot image (Image.gz, Image.gz-dtb, etc.) regardless of device architecture.
+* **Draft Releases:**
+* - Finished builds are uploaded as **Draft Releases**. You can review them before making them public.
+* **Native Logging:**
+* - Full compilation logs are available directly in the GitHub Actions console for easy troubleshooting.
+* **Node.js 24 Ready:**
+* - Uses the latest `actions/checkout@v5` to ensure compatibility with modern GitHub runners.
 
-  * **Draft Release:** Once the build is finished, a **Draft** will be created in your [Releases](https://www.google.com/search?q=https://github.com/settings/replaceme) page. You must manually publish it to make it public.
-  * **Logs:** If the build fails, a `Failure-Log` will be available in the **Artifacts** section of the Action run for troubleshooting.
-  * **Cleanup:** The workspace is automatically cleaned after every run to keep the environment fast and safe.
-
------
+---
 
 **Made with ❤️ by @dantepaulxd**
